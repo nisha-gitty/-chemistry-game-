@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChemMatch — Symbols · Valency · Formula (Grade 9)</title>
+<style>
+:root{--bg:#0f1724;--card:#0b1220;--accent:#6ee7b7;--muted:#9aa4b2}
+body{font-family:Inter,system-ui,Arial;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg)}
+.introScreen{position:fixed;inset:0;background:url('https://images.unsplash.com/photo-1581092795365-4f64e48c962d?fit=crop&w=1600&q=80') no-repeat center/cover;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;z-index:9999}
+.introText{font-size:36px;font-weight:700;opacity:0;animation:fadeIn 2s forwards}
+.introSub{font-size:18px;margin-top:12px;opacity:0;animation:fadeIn 2s 1s forwards}
+#startBtn {
+  opacity:0;
+  animation:fadeInBounce 1s 3s forwards, stayVisible 20s 4s forwards;
+  transform:scale(0);
+  margin-top:20px;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeInBounce{0%{opacity:0;transform:scale(0)}70%{opacity:1;transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes stayVisible {
+  from { opacity:1; }
+  to { opacity:1; }
+}
+.app{width:980px;max-width:96%;padding:20px;border-radius:12px;background:linear-gradient(180deg,#081025 0%,#071423 100%);box-shadow:0 10px 30px rgba(2,6,23,0.6);color:#ecf0f7;margin:40px auto;transition:box-shadow 0.4s}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{font-size:20px;margin:0}
+.meta{font-size:13px;color:var(--muted)}
+.topbar{display:flex;gap:10px;align-items:center}
+button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:8px 12px;border-radius:8px;cursor:pointer;transition:background 0.2s,transform 0.2s}
+button:active{transform:scale(0.97);background:rgba(255,255,255,0.06);}
+.btn-primary{background:var(--accent);color:#052018;border:none;box-shadow:0 1px 4px rgba(110,231,183,0.08);}
+.btn-primary:active{background:#3fb98f;}
+.board{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));padding:14px;border-radius:10px;min-height:360px;text-align:center;transition:background 0.4s}
+.row{display:flex;justify-content:space-around;margin:10px 0}
+.col{width:45%;}
+.card{background:var(--card);padding:10px;border-radius:8px;margin:6px 0;cursor:pointer;user-select:none;border:2px solid transparent;transition:border-color 0.25s,transform 0.25s;}
+.card.selected{border-color:var(--accent);transform:scale(1.06);}
+.card.correct{animation:correctFlash 0.6s;}
+.card.incorrect{animation:wrongFlash 0.6s;}
+@keyframes correctFlash{0%{background:#6ee7b7;}100%{background:var(--card);}}
+@keyframes wrongFlash{0%{background:#ef4444;}100%{background:var(--card);}}
+.hidden{visibility:hidden}
+.big{font-size:20px;font-weight:700}
+.sm{font-size:13px;color:var(--muted)}
+.center{display:flex;flex-direction:column;align-items:center;gap:8px}
+#levelComplete{background:rgba(0,0,0,0.6);position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999;animation:fadeIn 0.4s}
+#levelComplete .box{background:#10182a;padding:30px;border-radius:12px;max-width:500px;text-align:center;line-height:1.5;box-shadow:0 2px 20px #0008;}
+.timer{font-size:18px;margin-bottom:10px}
+.leaderboard{background:#0b1220;padding:18px;border-radius:10px;margin:20px auto 0;max-width:360px;}
+.leaderboard h2{margin:0 0 10px 0;font-size:18px;}
+.leaderboard-list{list-style:none;padding:0;margin:0;}
+.leaderboard-list li{padding:6px 0;font-size:15px;border-bottom:1px solid #222;}
+.leaderboard-list li:last-child{border-bottom:none;}
+@media(max-width:700px){
+    .app{width:99%;padding:6vw 2vw;}
+    .row{flex-direction:column;}
+    .col{width:100%;}
+    #levelComplete .box{max-width:94vw;}
+    .leaderboard{max-width:98vw;}
+    .introText{font-size:7vw;}
+    .introSub{font-size:4vw;}
+}
+@media(max-width:500px){
+    .app{padding:2vw 0.5vw;}
+    button{padding:6px 8px;font-size:15px;}
+    .card{font-size:15px;}
+    .big{font-size:16px;}
+    .timer{font-size:15px;}
+    .leaderboard{padding:10px;}
+}
+</style>
+</head>
+<body>
+<!-- SOUND EFFECTS -->
+<audio id="audio-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b6c6568.mp3" preload="auto"></audio>
+<audio id="audio-correct" src="https://cdn.pixabay.com/audio/2022/03/15/audio_113b6c6568.mp3" preload="auto"></audio>
+<audio id="audio-wrong" src="https://cdn.pixabay.com/audio/2022/03/15/audio_116b6c6568.mp3" preload="auto"></audio>
+<audio id="audio-complete" src="https://cdn.pixabay.com/audio/2022/03/15/audio_117b6c6568.mp3" preload="auto"></audio>
+
+<div class="introScreen">
+  <div class="introText">⚗️ Chemistry Challenge</div>
+  <div class="introSub">Test your knowledge of symbols, valency & equations!</div>
+  <button id="startBtn" class="btn-primary">START THE GAME</button>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <header>
+    <div>
+      <h1>ChemMatch — Symbols · Valency · Formula</h1>
+    </div>
+    <div class="topbar">
+      <div class="meta">Score: <span id="score">0</span></div>
+      <div class="meta">High: <span id="high">0</span></div>
+      <button id="restart">Restart</button>
+    </div>
+  </header>
+  <div class="board">
+    <div class="timer" id="timer">Time: 60</div>
+    <div id="task"></div>
+    <div id="gameArea"></div>
+    <div id="inputArea" style="display:none;margin-top:12px">
+      <input id="textAns" placeholder="Type formula here (example: NaCl)" />
+      <div style="margin-top:8px"><button id="submitAns" class="btn-primary">Submit</button></div>
+    </div>
+    <div class="leaderboard" id="leaderboard" style="display:none;">
+      <h2>Leaderboard</h2>
+      <ul class="leaderboard-list" id="leaderboardList"></ul>
+    </div>
+  </div>
+</div>
+
+<div id="levelComplete">
+  <div class="box">
+    <h2 id="levelTitle">Level Complete!</h2>
+    <p id="levelScore"></p>
+    <div id="nameEntryArea" style="margin-top:16px; display:none;">
+      <label for="playerName" style="font-size:15px;">Enter your name for the leaderboard:</label><br/>
+      <input type="text" id="playerName" maxlength="20" style="margin-top:8px; padding:6px; width:70%; font-size:16px;" />
+      <button id="saveNameBtn" class="btn-primary" style="margin-top:8px">Save</button>
+    </div>
+    <button id="nextLevelBtn" class="btn-primary">Next Level</button>
+    <button id="playAgainBtn" class="btn-primary" style="margin-top:10px">Play Again</button>
+    <button id="resetScoreBtn" class="btn-primary" style="margin-top:10px">Reset Score</button>
+  </div>
+</div>
+
+<!-- CONFETTI CANVAS -->
+<canvas id="confettiCanvas" style="position:fixed;pointer-events:none;left:0;top:0;width:100vw;height:100vh;z-index:99999;display:none"></canvas>
+
+<script>
+const ELEMENTS=[{name:'Hydrogen',symbol:'H',valency:1},{name:'Oxygen',symbol:'O',valency:2},{name:'Nitrogen',symbol:'N',valency:3},{name:'Carbon',symbol:'C',valency:4},{name:'Sodium',symbol:'Na',valency:1},{name:'Chlorine',symbol:'Cl',valency:1},{name:'Calcium',symbol:'Ca',valency:2},{name:'Magnesium',symbol:'Mg',valency:2},{name:'Potassium',symbol:'K',valency:1},{name:'Sulfur',symbol:'S',valency:2},{name:'Aluminium',symbol:'Al',valency:3},{name:'Iron(III)',symbol:'Fe',valency:3}];
+const EQUATIONS=[{q:'Na + Cl → ?',a:'NaCl'},{q:'Ca + O → ?',a:'CaO'},{q:'H + O → ?',a:'H2O'},{q:'Al + O → ?',a:'Al2O3'},{q:'Fe + Cl → ?',a:'FeCl3'},{q:'Mg + Cl → ?',a:'MgCl2'}];
+let state={level:1,score:0,high:0,picks:[],data:[],time:60,eqIndex:0,playerName:''};
+const SCORE={correct:10,wrong:-5};
+const scoreEl=document.getElementById('score');
+const highEl=document.getElementById('high');
+const gameArea=document.getElementById('gameArea');
+const inputArea=document.getElementById('inputArea');
+const textAns=document.getElementById('textAns');
+const submitAns=document.getElementById('submitAns');
+const restartBtn=document.getElementById('restart');
+const task=document.getElementById('task');
+const timerEl=document.getElementById('timer');
+const levelComplete=document.getElementById('levelComplete');
+const levelScore=document.getElementById('levelScore');
+const nextLevelBtn=document.getElementById('nextLevelBtn');
+const levelTitle=document.getElementById('levelTitle');
+const playAgainBtn=document.getElementById('playAgainBtn');
+const resetScoreBtn=document.getElementById('resetScoreBtn');
+const leaderboard=document.getElementById('leaderboard');
+const leaderboardList=document.getElementById('leaderboardList');
+const nameEntryArea=document.getElementById('nameEntryArea');
+const playerNameInp=document.getElementById('playerName');
+const saveNameBtn=document.getElementById('saveNameBtn');
+const confettiCanvas=document.getElementById('confettiCanvas');
+let timerInterval=null;
+
+// Sound Effects (Web Audio API Gain Boost)
+const audioClick = document.getElementById('audio-click');
+const audioCorrect = document.getElementById('audio-correct');
+const audioWrong = document.getElementById('audio-wrong');
+const audioComplete = document.getElementById('audio-complete');
+
+// Helper to play audio at boosted volume
+function playSound(type) {
+  let audioElem;
+  if (type === 'click') audioElem = audioClick;
+  else if (type === 'correct') audioElem = audioCorrect;
+  else if (type === 'wrong') audioElem = audioWrong;
+  else if (type === 'complete') audioElem = audioComplete;
+  if (!audioElem) return;
+
+  // Web Audio API boost
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ctx.createMediaElementSource(audioElem);
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 3.0; // 300% volume boost
+    src.connect(gainNode).connect(ctx.destination);
+    audioElem.currentTime = 0;
+    audioElem.play();
+    audioElem.onended = () => {
+      src.disconnect();
+      gainNode.disconnect();
+      ctx.close();
+    };
+  } catch(e) {
+    // fallback
+    audioElem.volume = 1;
+    audioElem.currentTime = 0;
+    audioElem.play();
+  }
+}
+
+// Confetti celebration (simple)
+function showConfetti() {
+  confettiCanvas.style.display='block';
+  const ctx = confettiCanvas.getContext('2d');
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+  let pieces = [];
+  for(let i=0;i<120;i++){
+    pieces.push({
+      x:Math.random()*confettiCanvas.width,
+      y:-20,
+      w:8+Math.random()*8,
+      h:8+Math.random()*8,
+      color:`hsl(${Math.random()*360},80%,60%)`,
+      vy:2+Math.random()*3,
+      vx:-2+Math.random()*4,
+      angle:Math.random()*2*Math.PI
+    });
+  }
+  let ticks=0;
+  function draw(){
+    ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    for(let p of pieces){
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle=p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+      p.x+=p.vx; p.y+=p.vy; p.angle+=0.1*Math.random();
+      if(p.y>confettiCanvas.height) p.y=-20;
+      if(p.x<0) p.x=confettiCanvas.width;
+      if(p.x>confettiCanvas.width) p.x=0;
+    }
+    ticks++;
+    if(ticks<120) requestAnimationFrame(draw);
+    else confettiCanvas.style.display='none';
+  }
+  draw();
+}
+
+// Leaderboard functions
+function loadLeaderboard() {
+  let lb = [];
+  try{lb=JSON.parse(localStorage.getItem('chem_leaderboard')||'[]');}catch(e){lb=[];}
+  return lb;
+}
+function saveLeaderboard(lb) {
+  localStorage.setItem('chem_leaderboard',JSON.stringify(lb));
+}
+function addToLeaderboard(name,score) {
+  let lb = loadLeaderboard();
+  lb.push({name,score});
+  lb.sort((a,b)=>b.score-a.score);
+  lb = lb.slice(0,10); // top 10 only
+  saveLeaderboard(lb);
+}
+function showLeaderboard() {
+  leaderboard.style.display='block';
+  let lb = loadLeaderboard();
+  leaderboardList.innerHTML = lb.length==0 ? '<li>No scores yet.</li>' :
+    lb.map((e,i)=>`<li>${i+1}. <b>${e.name}</b> — ${e.score}</li>`).join('');
+}
+function hideLeaderboard() {
+  leaderboard.style.display='none';
+}
+
+// High score
+function loadHigh(){
+  state.high=Number(localStorage.getItem('chem_high')||0);
+  highEl.textContent=state.high;
+}
+function startTimer(){
+  clearInterval(timerInterval);
+  state.time=60;
+  timerEl.textContent='Time: '+state.time;
+  timerInterval=setInterval(()=>{
+    state.time--;
+    timerEl.textContent='Time: '+state.time;
+    if(state.time<=0){
+      clearInterval(timerInterval);
+      showLevelComplete();
+    }
+  },1000)
+}
+function showLevelComplete(){
+  clearInterval(timerInterval);
+  playSound('complete');
+  showConfetti();
+  levelScore.innerHTML=`Level ${state.level} Score: ${state.score}`;
+  levelComplete.style.display='flex';
+  nameEntryArea.style.display='none';
+  playerNameInp.value='';
+  if(state.level===3){
+    levelTitle.textContent='🎉 Game Complete!';
+    // Show leaderboard name entry
+    nameEntryArea.style.display='block';
+    nextLevelBtn.style.display='none';
+    showLeaderboard();
+  }else{
+    levelTitle.textContent='Level Complete!';
+    nextLevelBtn.style.display='inline-block';
+    hideLeaderboard();
+  }
+}
+function nextLevel(){
+  levelComplete.style.display='none';
+  state.level++;
+  if(state.level>3){
+    task.textContent='All levels completed! Well done!';
+    gameArea.innerHTML='';
+    inputArea.style.display='none';
+    return;
+  }
+  startLevel(state.level);
+}
+function updateScore(){
+  scoreEl.textContent=state.score;
+  if(state.score>state.high){
+    state.high=state.score;
+    localStorage.setItem('chem_high',state.high);
+    highEl.textContent=state.high;
+  }
+}
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// Level logic
+function startLevel(l){
+  gameArea.innerHTML='';
+  inputArea.style.display='none';
+  state.picks=[];
+  startTimer();
+  if(l===1){
+    task.textContent='Level 1: Match Names and Symbols';
+    const sample=[...ELEMENTS].sort(()=>Math.random()-0.5).slice(0,6);
+    const left=sample.map(e=>({side:'left',text:e.name,meta:e}));
+    let right=sample.map(e=>({side:'right',text:e.symbol,meta:e}));
+    right=shuffleArray(right);
+    const leftCol=document.createElement('div');leftCol.className='col';
+    const rightCol=document.createElement('div');rightCol.className='col';
+    left.forEach(c=>{
+      const d=document.createElement('div');
+      d.className='card';
+      d.textContent=c.text;
+      d.onclick=()=>pickCard(c,d);
+      d.ontouchstart=()=>pickCard(c,d);
+      leftCol.appendChild(d)
+    });
+    right.forEach(c=>{
+      const d=document.createElement('div');
+      d.className='card';
+      d.textContent=c.text;
+      d.onclick=()=>pickCard(c,d);
+      d.ontouchstart=()=>pickCard(c,d);
+      rightCol.appendChild(d)
+    });
+    const row=document.createElement('div');row.className='row';
+    row.appendChild(leftCol);row.appendChild(rightCol);
+    gameArea.appendChild(row);
+    state.data=left.concat(right);
+  }
+  else if(l===2){
+    task.textContent='Level 2: Pick correct valency for each element';
+    const sample=[...ELEMENTS].sort(()=>Math.random()-0.5).slice(0,6);
+    sample.forEach(e=>{
+      const div=document.createElement('div');
+      div.className='card';
+      div.textContent=e.name+' ('+e.symbol+')';
+      const btns=document.createElement('div');
+      [1,2,3,4].forEach(v=>{
+        const b=document.createElement('button');
+        b.textContent=v;
+        b.onclick=()=>{
+          playSound('click');
+          if(v===e.valency){
+            state.score+=SCORE.correct;
+            div.classList.add('correct');
+            playSound('correct');
+          }else{
+            state.score+=SCORE.wrong;
+            div.classList.add('incorrect');
+            playSound('wrong');
+          }
+          updateScore();
+          setTimeout(()=>{div.remove();
+            if(gameArea.children.length===0)showLevelComplete();
+          },420);
+        };
+        b.ontouchstart=()=>{
+          b.onclick();
+        };
+        btns.appendChild(b)
+      });
+      div.appendChild(btns);
+      gameArea.appendChild(div)
+    });
+  }
+  else if(l===3){
+    task.textContent='Level 3: Type the correct formula for each equation';
+    inputArea.style.display='block';
+    state.eqIndex=0;
+    showEquation();
+  }
+}
+
+function pickCard(c,d){
+  d.classList.add('selected');
+  playSound('click');
+  state.picks.push({data:c,el:d});
+  if(state.picks.length===2){
+    const[a,b]=state.picks;
+    if(a.data.meta===b.data.meta && a.data.side!==b.data.side){
+      a.el.classList.add('correct','hidden');
+      b.el.classList.add('correct','hidden');
+      state.score+=SCORE.correct;
+      playSound('correct');
+    }else{
+      a.el.classList.add('incorrect');
+      b.el.classList.add('incorrect');
+      state.score+=SCORE.wrong;
+      playSound('wrong');
+      setTimeout(()=>{
+        a.el.classList.remove('incorrect','selected');
+        b.el.classList.remove('incorrect','selected');
+      },350);
+    }
+    updateScore();
+    state.picks=[];
+    if(document.querySelectorAll('.card.hidden').length>=state.data.length)
+      setTimeout(showLevelComplete,400);
+  }
+}
+
+function showEquation(){
+  if(state.eqIndex>=EQUATIONS.length){showLevelComplete();return;}
+  const eq=EQUATIONS[state.eqIndex];
+  gameArea.innerHTML=`<div class='big'>${eq.q}</div>`;
+}
+submitAns.onclick=()=>{
+  playSound('click');
+  const ans=textAns.value.trim();
+  if(!ans)return;
+  const eq=EQUATIONS[state.eqIndex];
+  if(ans.toLowerCase()===eq.a.toLowerCase()){
+    state.score+=SCORE.correct;
+    playSound('correct');
+  }else{
+    state.score+=SCORE.wrong;
+    playSound('wrong');
+  }
+  updateScore();
+  state.eqIndex++;
+  textAns.value='';
+  showEquation();
+}
+textAns.addEventListener('keydown',function(e){
+  if(e.key==='Enter'){submitAns.onclick();}
+});
+
+restartBtn.onclick=()=>{
+  playSound('click');
+  state.score=0;updateScore();state.level=1;startLevel(1);hideLeaderboard();
+}
+nextLevelBtn.onclick=nextLevel;
+playAgainBtn.onclick=()=>{
+  playSound('click');
+  levelComplete.style.display='none';
+  state.score=0;updateScore();state.level=1;startLevel(1);hideLeaderboard();
+}
+resetScoreBtn.onclick=()=>{
+  playSound('click');
+  state.score=0;updateScore();levelComplete.style.display='none';state.level=1;startLevel(1);hideLeaderboard();
+}
+
+// Leaderboard name entry
+saveNameBtn.onclick=()=>{
+  playSound('click');
+  let name = playerNameInp.value.trim();
+  if(!name) name='Anonymous';
+  addToLeaderboard(name,state.score);
+  showLeaderboard();
+  nameEntryArea.style.display='none';
+};
+
+// Unlock all sounds on first click (browser audio policy fix)
+document.getElementById('startBtn').onclick=()=>{
+  // Try to unlock all sound effects
+  [audioClick, audioCorrect, audioWrong, audioComplete].forEach(a => {
+    try { a.volume = 1; a.play().then(()=>{a.pause(); a.currentTime=0;}); } catch(e) {}
+  });
+  playSound('click');
+  document.querySelector('.introScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadHigh();
+  updateScore();
+  startLevel(1);
+  showLeaderboard();
+};
+
+// Show leaderboard on intro screen as well
+window.onload=function(){
+  showLeaderboard();
+};
+
+// Resize confetti canvas on window resize
+window.onresize=function(){
+  confettiCanvas.width=window.innerWidth;
+  confettiCanvas.height=window.innerHeight;
+};
+</script>
+</body>
+</html>
